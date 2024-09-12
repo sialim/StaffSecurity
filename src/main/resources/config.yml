@@ -1,0 +1,10 @@
+commands_to_log:
+  - ban
+  - kick
+  - mute
+  - op
+  - gmc
+  - gms
+  - give
+discord:
+  channel_id: 'YOUR_DISCORD_CHANNEL_ID'

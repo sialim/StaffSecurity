@@ -1,0 +1,5 @@
+name: StaffSecurity
+version: '${project.version}'
+main: me.sialim.staffsecurity.StaffSecurity
+api-version: '1.21'
+depend: [DiscordSRV]
