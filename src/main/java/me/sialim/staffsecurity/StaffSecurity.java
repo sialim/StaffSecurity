@@ -5,8 +5,12 @@ import org.bukkit.GameMode;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
@@ -14,6 +18,7 @@ import java.util.List;
 public final class StaffSecurity extends JavaPlugin implements Listener {
     private List<String> commandsToLog;
     private String discordChannelId;
+    private String itemLogChannelId = "1287109476146610256";
 
     @Override
     public void onEnable() {
@@ -55,6 +60,41 @@ public final class StaffSecurity extends JavaPlugin implements Listener {
         logToDiscord(message);
     }
 
+    @EventHandler public void onPlayerDropItem(PlayerDropItemEvent e) {
+        if (e.getPlayer().getGameMode() == GameMode.CREATIVE) {
+            String pName = e.getPlayer().getName();
+            String itemName = e.getItemDrop().getItemStack().getType().name();
+
+            String dropMessage = ":warning: **" + pName + "** dropped item: `" + itemName + "` from the creative inventory.";
+            logToDiscord(itemLogChannelId, dropMessage);
+        }
+    }
+
+    @EventHandler public void onCreativeInventory(InventoryCreativeEvent e) {
+        if (e.getWhoClicked().getGameMode() == GameMode.CREATIVE) {
+            ItemStack itemName = e.getCurrentItem();
+            String pName = e.getWhoClicked().getName();
+
+            switch (e.getClick()) {
+                case CREATIVE:
+                    String takeMessage = ":warning: **" + pName + "** took item: `" + itemName + "` from the creative inventory.";
+                    logToDiscord(itemLogChannelId, takeMessage);
+                    break;
+
+                case SHIFT_LEFT:
+                case SHIFT_RIGHT:
+                    if (e.getSlotType() == InventoryType.SlotType.QUICKBAR && e.getCurrentItem() == null) {
+                        String deleteMessage = ":warning: **" + pName + "** deleted item: `" + itemName + "` from the creative inventory.";
+                        logToDiscord(itemLogChannelId, deleteMessage);
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
     private void logToDiscord(String message)
     {
         if (DiscordSRV.isReady && discordChannelId != null && !discordChannelId.isEmpty())
@@ -65,14 +105,11 @@ public final class StaffSecurity extends JavaPlugin implements Listener {
         }
     }
 
-    private void logToDiscord(String pName, String fullCommand)
-    {
-        if (DiscordSRV.isReady && discordChannelId != null && !discordChannelId.isEmpty())
-        {
-            String message = ":warning: **" + pName + "** executed command: `" + fullCommand + "`";
-            DiscordSRV.getPlugin().getJda().getTextChannelById(discordChannelId).sendMessage(message).queue();
+    private void logToDiscord(String channelId, String message) {
+        if (DiscordSRV.isReady && channelId != null && !channelId.isEmpty()) {
+            DiscordSRV.getPlugin().getJda().getTextChannelById(channelId).sendMessage(message).queue();
         } else {
-            getLogger().warning("DiscordSRV or the Discord channel ID aren't properly prepared.");
+            getLogger().warning("DiscordSRV or the specified Discord channel ID aren't properly prepared.");
         }
     }
 }
